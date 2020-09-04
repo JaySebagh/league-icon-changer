@@ -49,18 +49,23 @@ if (require("electron-squirrel-startup")) {
   // eslint-disable-line global-require
   app.quit();
 }
+
+// const nativeImage = require('electron').nativeImage;
+    // var image = nativeImage.createFromPath(__dirname + '/images/icon.ico'); 
+    // image.setTemplateImage(true);
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 950,
-    height: 650,
+    width: 645,
+    height: 500,
     resizable: false,
     webPreferences: {
       nodeIntegration: true,
       devTools: false,
     },
     frame: false,
-    icon: __dirname + "/images/icon.ico",
+    // icon: image,
   });
 
   // and load the index.html of the app.

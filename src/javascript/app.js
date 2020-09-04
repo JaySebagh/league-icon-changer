@@ -71,172 +71,13 @@ class ClientConnection {
     this.makeRequest("PUT", body, this.#endpoints.presetIcon);
   }
 
-  // Changes icon to user defined icon code
-  requestAnyIcon(body) {
-    this.makeRequest("PUT", body, this.#endpoints.lolChat);
-  }
-
-  // Aram boost
-  requestAram() {
-    this.makeRequest("POST", "", this.#endpoints.aram);
-  }
-
-  // Change profile background
-  requestBackground(body) {
-    this.makeRequest("POST", body, this.#endpoints.profile);
-  }
-
-  // Set club with club data
-  requestClubWData(body) {
-    this.makeRequest("PUT", body, this.#endpoints.lolChat);
-  }
-
-  // Change rank displayed on hover-card
-  requestRank(body) {
-    this.makeRequest("PUT", body, this.#endpoints.lolChat);
-  }
-
-  // Changes status
-  requestStatus(body) {
-    this.makeRequest("PUT", body, this.#endpoints.lolChat);
-  }
-
-  // Custom request
-  requestCustom(method, body, endPoint, reply) {
-    this.#options["url"] = this.#url + endPoint;
-    this.#options["method"] = method;
-    this.#options["body"] = JSON.stringify(body);
-    request(this.#options, function (error, response) {
-      let dialogOptions = {};
-      try {
-        dialogOptions = {
-          type: "info",
-          title: "Info",
-          message: `Response status code: ${response.statusCode}`,
-        };
-        reply.value = "";
-        let obj = JSON.parse(response.body);
-        let format = JSON.stringify(obj, null, 3);
-        reply.value = format;
-        let input = new Event("input");
-        reply.dispatchEvent(input);
-      } catch (e) {
-        dialogOptions = {
-          type: "info",
-          title: "Info",
-          message: "Made the request",
-        };
-      }
-      dialog.showMessageBox(dialogOptions);
-    });
-  }
-
-  // Gets club of a friend
-  requestFriendClub(friendName, sendRequest, clubInfo, clubCode) {
-    this.#options["url"] = this.#url + this.#endpoints.friends;
-    this.#options["method"] = "GET";
-    request(this.#options, function (error, response) {
-      if (response.statusCode === 404) {
-        return dialog.showErrorBox(
-          "Error",
-          "There was an error connecting to the friends list"
-        );
-      }
-      let friendsList = JSON.parse(response.body);
-      for (let i = 0; i < friendsList.length; i++) {
-        // Friend has been found
-        if (
-          friendName.value.toUpperCase() === friendsList[i].name.toUpperCase()
-        ) {
-          let availability = friendsList[i].availability;
-          let friendClubData = friendsList[i].lol.clubsData;
-          // Friend has to be online to get club data
-          if (availability === "offline" || availability === "mobile") {
-            return dialog.showErrorBox("Error", "That friend is offline");
-          } else if (friendClubData === undefined) {
-            return dialog.showErrorBox(
-              "Error",
-              "That friends club data could not be found"
-            );
-          } else {
-            if (sendRequest) {
-              clubInfo["lol"]["clubsData"] = friendClubData;
-              let endpoints = LeagueClient.endpoints;
-              LeagueClient.makeRequest("PUT", clubInfo, endpoints.lolChat);
-            } else {
-              let dialogOptions = {
-                type: "info",
-                title: "Success",
-                message: "The request has been made",
-              };
-              dialog.showMessageBox(dialogOptions);
-            }
-            return (clubCode.value = friendClubData);
-          }
-        }
-      }
-      dialog.showErrorBox("Error", "Could not find that friend");
-    });
-  }
-
-  // Gets club of person in custom game lobby, champ select, or post game
-  requestClub(lobbyType, summonerSearch, sendRequest, clubInfo) {
-    this.#options["url"] = this.#url + this.#endpoints.conversations;
-    this.#options["method"] = "GET";
-    request(this.#options, function (error, response) {
-      if (response.statusCode === 404) {
-        return dialog.showErrorBox("Error", `There was an error\n${error}`);
-      }
-      let lobbyID = "";
-      let conversations = JSON.parse(response.body);
-      let inLobby = false;
-      for (let i = 0; i < conversations.length; i++) {
-        let lobby = conversations[i];
-        if (lobby.type === lobbyType) {
-          inLobby = true;
-          lobbyID = lobby.id;
-          let endpoint = LeagueClient.endpoints.conversations;
-          endpoint = `${endpoint}${lobbyID}/participants`;
-          let options = LeagueClient.options;
-          let url = LeagueClient.url;
-          options["url"] = url + endpoint;
-          options["method"] = "GET";
-          request(options, function (error, response) {
-            let summoners = JSON.parse(response.body);
-            for (let i = 0; i < summoners.length; i++) {
-              let currentSummoner = summoners[i];
-              if (currentSummoner.name.toUpperCase() === summonerSearch) {
-                let summonerClubData = currentSummoner.lol.clubsData;
-                clubCode.value = summonerClubData;
-                if (sendRequest) {
-                  clubInfo["lol"]["clubsData"] = summonerClubData;
-                  let endpoint = LeagueClient.endpoints.lolChat;
-                  return LeagueClient.makeRequest("PUT", clubInfo, endpoint);
-                } else {
-                  let dialogOptions = {
-                    type: "info",
-                    title: "Success",
-                    message: "The request has been made",
-                  };
-                  return dialog.showMessageBox(dialogOptions);
-                }
-              }
-            }
-            dialog.showErrorBox("Error", "Could not find that summoner");
-          });
-        }
-      }
-      if (!inLobby) {
-        dialog.showErrorBox("Error", `You are not in ${lobbyType}`);
-      }
-    });
-  }
   makeRequest(method, body, endPoint) {
     this.#options["url"] = this.#url + endPoint;
     this.#options["method"] = method;
     this.#options["body"] = JSON.stringify(body);
     this.run(this.#options);
   }
+  
   run(command) {
     request(command, function (error, response) {
       let dialogOptions = {};
@@ -246,11 +87,11 @@ class ClientConnection {
           response.statusCode === 200 ||
           response.statusCode === 204)
       ) {
-        dialogOptions = {
-          type: "info",
-          title: "Success",
-          message: "The request has been made",
-        };
+        // dialogOptions = {
+        //   type: "info",
+        //   title: "Success",
+        //   message: "The request has been made",
+        // };
       } else {
         let status = "No response from LCU";
         try {
@@ -261,8 +102,8 @@ class ClientConnection {
           title: "Error",
           message: `There was an error: \n(${status})`,
         };
+        dialog.showMessageBox(dialogOptions);
       }
-      dialog.showMessageBox(dialogOptions);
     });
   }
 }
